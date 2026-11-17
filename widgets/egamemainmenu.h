@@ -13,7 +13,8 @@ public:
     void initialize(const eAction& resumeAct,
                     const eAction& saveAct,
                     const eAction& loadAct,
-                    const eAction& exitAct);
+                    const eAction& exitAct,
+                    const eAction& optionsAct = nullptr);
 };
 
 #endif // EGAMEMAINMENU_H

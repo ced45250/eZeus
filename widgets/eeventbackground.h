@@ -6,6 +6,10 @@
 class eEventBackground : public eWidget {
 public:
     using eWidget::eWidget;
+    ~eEventBackground();
+
+    // Is a dialog open?
+    static bool sAnyOpen() { return sOpenCount > 0; }
 
     void initialize(eWidget* const parent,
                     eWidget* const child,
@@ -18,6 +22,8 @@ protected:
 private:
     void close();
 
+    static int sOpenCount;
+    bool mCounted = false;
     bool mClosable = false;
     eAction mCloseFunc;
 };

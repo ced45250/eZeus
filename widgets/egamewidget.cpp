@@ -66,6 +66,8 @@
 #include "edistrictconditionswidget.h"
 #include "buildings/ehippodromepiece.h"
 #include "estringhelpers.h"
+#include "ekeybindings.h"
+#include "widgets/ekeybindingsmenu.h"
 
 #include <algorithm>
 
@@ -1772,56 +1774,89 @@ void eGameWidget::switchPause() {
     updateTipPositions();
 }
 
+void eGameWidget::showSpeedInfo() {
+    static const char* const names[] = {"Very slow", "Normal", "Fast",
+                                        "Faster", "Very fast", "Maximum"};
+    const int n = sMaxSpeedId + 1;
+    const int id = std::clamp(mSpeedId, 0, n - 1);
+    const std::string str = std::string("Game speed: ") + names[id] +
+                            " (" + std::to_string(id + 1) + "/" +
+                            std::to_string(n) + ")";
+    if(mSpeedInfoLabel) {
+        mSpeedInfoLabel->deleteLater();
+        mSpeedInfoLabel = nullptr;
+    }
+    const std::string space = "     ";
+    mSpeedInfoLabel = new eFramedLabel(space + str + space, window());
+    mSpeedInfoLabel->setType(eFrameType::message);
+    mSpeedInfoLabel->setSmallFontSize();
+    mSpeedInfoLabel->setHugePadding();
+    mSpeedInfoLabel->fitContent();
+    addWidget(mSpeedInfoLabel);
+    const int vw = width() - mGm->width();
+    mSpeedInfoLabel->setX((vw - mSpeedInfoLabel->width())/2);
+    const int p = mSpeedInfoLabel->padding();
+    int y = mTopBar->height() + 2*p;
+    if(mPausedLabel) y += mPausedLabel->height() + p;
+    mSpeedInfoLabel->setY(y);
+    // ~2 seconds (the game draws 20 frames per second)
+    mSpeedInfoEndFrame = mFrame + 40;
+}
+
+
+
+
+
 bool eGameWidget::keyPressEvent(const eKeyPressEvent& e) {
     if(mLocked) return true;
     const auto k = e.key();
-    if(k == SDL_Scancode::SDL_SCANCODE_KP_PLUS ||
-       k == SDL_Scancode::SDL_SCANCODE_RIGHTBRACKET) {
+    if(eKeyBindings::matches(eKeyAction::speedUp, k)) {
         mSpeedId = std::clamp(mSpeedId + 1, 0, sMaxSpeedId);
         mSpeed = sSpeeds[mSpeedId];
-    } else if(k == SDL_Scancode::SDL_SCANCODE_KP_MINUS ||
-              k == SDL_Scancode::SDL_SCANCODE_LEFTBRACKET) {
+        showSpeedInfo();
+    } else if(eKeyBindings::matches(eKeyAction::speedDown, k)) {
         mSpeedId = std::clamp(mSpeedId - 1, 0, sMaxSpeedId);
         mSpeed = sSpeeds[mSpeedId];
-    } else if(k == SDL_Scancode::SDL_SCANCODE_R) {
+        showSpeedInfo();
+    } else if(eKeyBindings::matches(eKeyAction::rotate, k)) {
         mRotate = !mRotate;
         mRotateFrame = (mRotateFrame/gRotateFrames + 1)*gRotateFrames;
         mRotateId++;
         if(mRotateId > 3) mRotateId = 0;
-    } else if(k == SDL_Scancode::SDL_SCANCODE_P) {
+    } else if(eKeyBindings::matches(eKeyAction::pause, k)) {
         switchPause();
-    } else if(k == SDL_Scancode::SDL_SCANCODE_LEFT) {
-        setDX(mDX + 35);
-    } else if(k == SDL_Scancode::SDL_SCANCODE_RIGHT) {
-        setDX(mDX - 35);
-    } else if(k == SDL_Scancode::SDL_SCANCODE_UP) {
-        setDY(mDY + 35);
-    } else if(k == SDL_Scancode::SDL_SCANCODE_DOWN) {
-        setDY(mDY - 35);
-    } else if(k == SDL_Scancode::SDL_SCANCODE_F1) {
+    } else if(eKeyBindings::matches(eKeyAction::bookmark1, k)) {
         if(e.ctrlPressed()) {
             setBookmark(1);
         } else {
             viewBookmark(1);
         }
-    } else if(k == SDL_Scancode::SDL_SCANCODE_F2) {
+    } else if(eKeyBindings::matches(eKeyAction::bookmark2, k)) {
         if(e.ctrlPressed()) {
             setBookmark(2);
         } else {
             viewBookmark(2);
         }
-    } else if(k == SDL_Scancode::SDL_SCANCODE_F3) {
+    } else if(eKeyBindings::matches(eKeyAction::bookmark3, k)) {
         if(e.ctrlPressed()) {
             setBookmark(3);
         } else {
             viewBookmark(3);
         }
-    } else if(k == SDL_Scancode::SDL_SCANCODE_F4) {
+    } else if(eKeyBindings::matches(eKeyAction::bookmark4, k)) {
         if(e.ctrlPressed()) {
             setBookmark(4);
         } else {
             viewBookmark(4);
         }
+    } else if(eKeyBindings::matches(eKeyAction::rotateMapLeft, k) ||
+              eKeyBindings::matches(eKeyAction::rotateMapRight, k)) {
+        // Same as the arrows of the rotate button in the side menu
+        // (N, W, S, E)
+        const bool left = eKeyBindings::matches(eKeyAction::rotateMapLeft, k);
+        int i = static_cast<int>(mBoard->direction());
+        i = left ? (i + 3) % 4 : (i + 1) % 4;
+        setWorldDirection(static_cast<eWorldDirection>(i));
     } else if(k == SDL_Scancode::SDL_SCANCODE_ESCAPE) {
         if(!mMsgBox && !mBoard->editorMode()) {
             mBoard->waitUntilFinished();
@@ -1866,7 +1901,16 @@ bool eGameWidget::keyPressEvent(const eKeyPressEvent& e) {
             const auto exitAct = [w]() {
                 w->closeGame();
             };
-            menu->initialize(resumeAct, saveAct, loadAct, exitAct);
+            const auto optionsAct = [this, w, menu]() {
+                menu->deleteLater();
+                const auto km = new eKeyBindingsMenu(w);
+                km->initialize([km]() { km->deleteLater(); });
+                addWidget(km);
+                km->align(eAlignment::center);
+                w->execDialog(km);
+            };
+            menu->initialize(resumeAct, saveAct, loadAct, exitAct,
+                             optionsAct);
             addWidget(menu);
             menu->align(eAlignment::center);
             w->execDialog(menu);

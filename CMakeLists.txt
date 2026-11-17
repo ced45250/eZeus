@@ -861,6 +861,8 @@ add_executable(eZeus
     esettings.cpp
     esettings.h
     esplitbinary.h
+    ekeybindings.cpp
+    ekeybindings.h
     estringhelpers.cpp
     estringhelpers.h
     etexture.cpp
@@ -2774,6 +2776,8 @@ add_executable(eZeus
     widgets/egamemenu.h
     widgets/egamemenubase.cpp
     widgets/egamemenubase.h
+    widgets/ekeybindingsmenu.cpp
+    widgets/ekeybindingsmenu.h
     widgets/egamewidget.cpp
     widgets/egamewidget.h
     widgets/egamewidgetbuild.cpp

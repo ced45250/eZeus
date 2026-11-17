@@ -97,6 +97,7 @@ public:
     void grabKeyboard();
     bool releaseKeyboard();
     bool isKeyboardGrabber();
+    static bool sHasKeyboardGrabber() { return sKeyboardGrabber; }
 
     bool isLastPressed() const;
 

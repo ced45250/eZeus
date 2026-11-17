@@ -430,6 +430,7 @@ SOURCES += \
         epathfindtask.cpp \
         erand.cpp \
         esettings.cpp \
+        ekeybindings.cpp \
         estringhelpers.cpp \
         etexture.cpp \
         etexturecollection.cpp \
@@ -632,6 +633,7 @@ SOURCES += \
         widgets/egamemainmenu.cpp \
         widgets/egamemenu.cpp \
         widgets/egamemenubase.cpp \
+        widgets/ekeybindingsmenu.cpp \
         widgets/egamewidget.cpp \
         widgets/egamewidgetbuild.cpp \
         widgets/egamewidgetevents.cpp \
@@ -1133,6 +1135,7 @@ HEADERS += \
     erand.h \
     esettings.h \
     esplitbinary.h \
+    ekeybindings.h \
     estringhelpers.h \
     etexture.h \
     etexturecollection.h \
@@ -2845,6 +2848,7 @@ HEADERS += \
     widgets/egamemainmenu.h \
     widgets/egamemenu.h \
     widgets/egamemenubase.h \
+    widgets/ekeybindingsmenu.h \
     widgets/egamewidget.h \
     widgets/egiftdialog.h \
     widgets/egiftsizedialog.h \

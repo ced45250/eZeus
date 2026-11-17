@@ -23,6 +23,8 @@
 #include "etilehelper.h"
 #include "emainwindow.h"
 #include "eminimap.h"
+#include "ekeybindings.h"
+#include "eeventbackground.h"
 
 #include "eiteratesquare.h"
 
@@ -378,6 +380,10 @@ void eGameWidget::paintEvent(ePainter& p) {
         }
     }
     if(updateTips) updateTipPositions();
+    if(mSpeedInfoLabel && mFrame > mSpeedInfoEndFrame) {
+        mSpeedInfoLabel->deleteLater();
+        mSpeedInfoLabel = nullptr;
+    }
     mBoard->incFrame();
 
     const bool iterate = mSpeedId == sMaxSpeedId;
@@ -386,7 +392,9 @@ void eGameWidget::paintEvent(ePainter& p) {
         mBoard->scheduleDataUpdate();
         mBoard->updateAppealMapIfNeeded();
         mBoard->handleFinishedTasks();
-        const int nc = children().size() - mTips.size();
+        // Informational banners must not pause the game
+        const int nc = children().size() - mTips.size() -
+                       (mSpeedInfoLabel ? 1 : 0);
         const bool incTime = !mPaused && !mLocked && !mMsgBox && !mInfoWidget && nc < 6;
         if(incTime) {
             const bool lost = mBoard->episodeLost();
@@ -413,6 +421,42 @@ void eGameWidget::paintEvent(ePainter& p) {
         setDY(mDY + 35);
     } else if(mHoverY == height() - 1) {
         setDY(mDY - 35);
+    }
+    // Keyboard scrolling (arrows, WASD...) while the key is held.
+    // Disabled during text input, messages and dialogs.
+    // The step follows real elapsed time, so the speed stays constant
+    // when a frame takes longer than usual.
+    {
+        const Uint32 now = SDL_GetTicks();
+        const Uint32 elapsed = std::min<Uint32>(now - mLastKeyScrollTicks, 100);
+        mLastKeyScrollTicks = now;
+        const bool ctrlHeld = SDL_GetModState() & KMOD_CTRL;
+        if(!mLocked && !mMsgBox && !ctrlHeld &&
+           !eWidget::sHasKeyboardGrabber() && !eEventBackground::sAnyOpen()) {
+            int kx = 0;
+            int ky = 0;
+            if(eKeyBindings::held(eKeyAction::scrollLeft)) kx++;
+            if(eKeyBindings::held(eKeyAction::scrollRight)) kx--;
+            if(eKeyBindings::held(eKeyAction::scrollUp)) ky++;
+            if(eKeyBindings::held(eKeyAction::scrollDown)) ky--;
+            const double step = eKeyBindings::scrollSpeed()*elapsed/1000.;
+            if(kx) {
+                mKeyScrollRemX += kx*step;
+                const int d = (int)mKeyScrollRemX;
+                mKeyScrollRemX -= d;
+                if(d) setDX(mDX + d);
+            } else {
+                mKeyScrollRemX = 0;
+            }
+            if(ky) {
+                mKeyScrollRemY += ky*step;
+                const int d = (int)mKeyScrollRemY;
+                mKeyScrollRemY -= d;
+                if(d) setDY(mDY + d);
+            } else {
+                mKeyScrollRemY = 0;
+            }
+        }
     }
     eGameBoardRegisterLock lock(*mBoard);
 

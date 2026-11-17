@@ -281,6 +281,9 @@ private:
     eInfoWidget* openInfoWidget(const std::vector<eCharacter *> chars);
 
     void switchPause();
+    // Shows the game speed for a short time after a speed shortcut
+    void showSpeedInfo();
+
 
     stdsptr<eTexture> getBasementTexture(
             const int tx, const int ty, eBuilding* const d,
@@ -356,6 +359,14 @@ private:
     std::vector<ePatrolGuide> mSavedGuides;
 
     eFramedLabel* mPausedLabel = nullptr;
+
+    Uint32 mLastKeyScrollTicks = 0;
+    double mKeyScrollRemX = 0;
+    double mKeyScrollRemY = 0;
+
+    eFramedLabel* mSpeedInfoLabel = nullptr;
+    int mSpeedInfoEndFrame = 0;
+
 
     eTopBarWidget* mTopBar = nullptr;
     eInfoWidget* mInfoWidget = nullptr;

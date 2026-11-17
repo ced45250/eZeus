@@ -11,6 +11,7 @@
 #include "textures/egametextures.h"
 
 #include "egamedir.h"
+#include "ekeybindings.h"
 #include "enumbers.h"
 
 #include "audio/emusic.h"
@@ -107,6 +108,7 @@ int main() {
     }
 
     eGameDir::initialize();
+    eKeyBindings::initialize();
 
 //    SDL_DisplayMode mode;
 //    const bool r0 = getDisplayResolution(mode);

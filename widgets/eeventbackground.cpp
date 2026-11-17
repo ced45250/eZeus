@@ -1,5 +1,11 @@
 #include "eeventbackground.h"
 
+int eEventBackground::sOpenCount = 0;
+
+eEventBackground::~eEventBackground() {
+    if(mCounted) sOpenCount--;
+}
+
 void eEventBackground::initialize(eWidget* const parent,
                                   eWidget* const child,
                                   const bool closable,
@@ -10,6 +16,10 @@ void eEventBackground::initialize(eWidget* const parent,
     resize(parent->width(), parent->height());
     mClosable = closable;
     mCloseFunc = closeFunc;
+    if(!mCounted) {
+        mCounted = true;
+        sOpenCount++;
+    }
 }
 
 void eEventBackground::paintEvent(ePainter& p) {
