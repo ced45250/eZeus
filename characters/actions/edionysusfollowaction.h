@@ -22,6 +22,7 @@ private:
     void increment(const int by) override;
 
     stdptr<eCharacter> mFollower;
+    int mLookForFollower = 0; // not saved
 };
 
 #endif // EDIONYSUSFOLLOWACTION_H

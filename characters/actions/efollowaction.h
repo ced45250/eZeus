@@ -27,10 +27,11 @@ public:
     void write(eWriteStream& dst) const override;
 protected:
     void increment(const int by) override;
+protected:
+    stdptr<eCharacter> mFollow;
 private:
     eCharacterActionState nextTurn(eOrientation& turn) override;
 
-    stdptr<eCharacter> mFollow;
 
     struct ePathNode {
         eTile* fTile;
