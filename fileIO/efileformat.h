@@ -8,6 +8,7 @@ namespace eFileFormat {
         cartTarget,
         disallowedBuildings,
         sanctuaryGuardian,
+        aresArmy,
 
         nextVersion
     };

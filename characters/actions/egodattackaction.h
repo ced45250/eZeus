@@ -10,6 +10,8 @@ enum class eGodAttackStage {
     none, appear, goTo1, patrol1, goTo2, patrol2, disappear
 };
 
+#include "characters/esoldierbanner.h"
+
 class eGodAttackAction : public eGodAction {
     friend class eGodObsticleHandler;
 public:
@@ -23,7 +25,14 @@ public:
     void write(eWriteStream& dst) const override;
 
     void setSanctuary(const stdptr<eSanctuary>& s);
+    // The god was beaten: its troops flee the city on foot
+    void fleeArmy();
 private:
+    // Ares invades with his warriors, Artemis with her Amazon archers:
+    // they act on their own and flee the city when the god leaves
+    void spawnAresArmy();
+    void moveAresArmy();
+
     void initialize();
 
     bool lookForAttack(const int dtime, int& time,
@@ -45,6 +54,10 @@ private:
     int mLookForSpecial = eRand::rand() % 2000;
 
     stdptr<eSanctuary> mSanctuary;
+
+    bool mArmySpawned = false;
+    int mArmyFollow = 0;
+    std::vector<stdsptr<eSoldierBanner>> mArmy;
 };
 
 class eGAA_loserDisappearFinish : public eCharActFunc {

@@ -105,6 +105,8 @@ public:
                                   const int ctx, const int cty,
                                   eGameBoard& board, const int dist,
                                   const int minDistFromEdge);
+    const std::vector<eSoldier*>& soldiers() const { return mSoldiers; }
+
     static void sPlace(std::vector<eSoldierBanner*> bs,
                        const int ctx, const int cty,
                        eGameBoard& board, const int dist,

@@ -595,6 +595,10 @@ void eGAA_fightFinish::call() {
             const auto s = board.sanctuary(cid, type);
             if(s) s->setSpawnWait(40000);
         }
+        // Troops of a beaten invading god (Ares, Artemis) flee the city
+        if(const auto ga = dynamic_cast<eGodAttackAction*>(loserPtr.get())) {
+            ga->fleeArmy();
+        }
         const auto finish = std::make_shared<eGAA_loserDisappearFinish>(
                                 board, loserPtr);
         loserPtr->disappear(true, finish);

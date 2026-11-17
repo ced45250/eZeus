@@ -1,4 +1,10 @@
 #include "egodattackaction.h"
+#include "characters/actions/ekillcharacterfinishfail.h"
+#include "characters/actions/emovetoaction.h"
+#include "fileIO/efileformat.h"
+#include "characters/actions/esoldieraction.h"
+#include "characters/eareswarrior.h"
+#include "characters/eamazon.h"
 
 #include "buildings/ebuilding.h"
 #include "engine/egameboard.h"
@@ -19,6 +25,27 @@ void eGodAttackAction::increment(const int by) {
     const auto c = character();
     const auto type = this->type();
     const auto at = c->actionType();
+    if(type == eGodType::ares || type == eGodType::artemis) {
+        if(!mArmySpawned && c->tile() &&
+           at == eCharacterActionType::walk) {
+            spawnAresArmy();
+        }
+        if(!mArmy.empty()) {
+            if(at == eCharacterActionType::die) {
+                // The god is beaten: the troops flee the city on foot
+                fleeArmy();
+            } else if(at == eCharacterActionType::disappear) {
+                // The god ends the invasion: the troops leave with it
+                for(const auto& b : mArmy) b->killAll();
+                mArmy.clear();
+            }
+        }
+        mArmyFollow += by;
+        if(mArmyFollow > 4000) {
+            mArmyFollow = 0;
+            moveAresArmy();
+        }
+    }
     if(at == eCharacterActionType::walk) {
         const int cursePeriod = eNumbers::sGodAttackCursePeriod;
         const int curseRange = eNumbers::sGodAttackCurseRange;
@@ -213,6 +240,168 @@ bool eGodAttackAction::decide() {
     return true;
 }
 
+void eGodAttackAction::spawnAresArmy() {
+    mArmySpawned = true;
+    const auto c = character();
+    const auto gtile = c->tile();
+    if(!gtile) return;
+    auto& board = this->board();
+    // The troops arrive a bit away from the god
+    eTile* tile = nullptr;
+    for(int r = 8; r <= 14 && !tile; r++) {
+        for(int dx = -r; dx <= r && !tile; dx++) {
+            for(int dy = -r; dy <= r && !tile; dy++) {
+                if(std::max(std::abs(dx), std::abs(dy)) != r) continue;
+                const auto t = board.tile(gtile->x() + dx, gtile->y() + dy);
+                if(!t || !t->walkable() || t->underBuilding()) continue;
+                if(t->cityId() != c->onCityId()) continue;
+                tile = t;
+            }
+        }
+    }
+    if(!tile) tile = gtile;
+    const auto cid = c->cityId();
+    const auto ocid = c->onCityId();
+    const int nBanners = 2;
+    const int perBanner = eNumbers::sSoldiersPerAresArtemisBanner;
+    for(int i = 0; i < nBanners; i++) {
+        const auto b = e::make_shared<eSoldierBanner>(
+                           eBannerType::enemy, board);
+        b->setOnCityId(ocid);
+        b->setCityId(cid);
+        b->backFromHome();
+        b->moveTo(tile->x(), tile->y());
+        mArmy.push_back(b);
+        for(int j = 0; j < perBanner; j++) {
+            stdsptr<eSoldier> s;
+            if(type() == eGodType::artemis) {
+                // Artemis comes with her Amazon archers
+                const auto a = e::make_shared<eAmazon>(board);
+                a->setIsArcher(true);
+                s = a;
+            } else {
+                s = e::make_shared<eAresWarrior>(board);
+            }
+            s->setCityId(cid);
+            s->setOnCityId(ocid);
+            const auto a = e::make_shared<eSoldierAction>(s.get());
+            a->setSpreadPeriod(true);
+            s->setAction(a);
+            s->changeTile(tile);
+            s->setActionType(eCharacterActionType::walk);
+            b->incCount();
+            s->setBanner(b.get());
+        }
+    }
+    std::vector<eSoldierBanner*> bs;
+    for(const auto& b : mArmy) bs.push_back(b.get());
+    eSoldierBanner::sPlace(bs, tile->x(), tile->y(), board, 3, 0);
+}
+
+void eGodAttackAction::moveAresArmy() {
+    // On their own: to the nearest enemy soldiers, otherwise to the
+    // nearest building of the city
+    std::vector<eSoldierBanner*> bs;
+    for(const auto& b : mArmy) {
+        if(b->count() > 0 && b->tile()) bs.push_back(b.get());
+    }
+    if(bs.empty()) return;
+    const auto from = bs.front()->tile();
+    auto& board = this->board();
+    const auto c = character();
+    const auto team = c->teamId();
+    const auto ocid = c->onCityId();
+    eTile* target = nullptr;
+    int best = 26;
+    for(const auto ch : board.characters()) {
+        if(!ch || ch->dead() || !ch->isSoldier()) continue;
+        if(!eTeamIdHelpers::isEnemy(ch->teamId(), team)) continue;
+        const auto t = ch->tile();
+        if(!t) continue;
+        const int d = std::max(std::abs(t->x() - from->x()),
+                               std::abs(t->y() - from->y()));
+        if(d < best) {
+            best = d;
+            target = t;
+        }
+    }
+    if(!target) {
+        best = __INT_MAX__;
+        const auto bds = board.buildings(ocid, [](eBuilding* const b) {
+            const auto bt = b->type();
+            return bt != eBuildingType::road &&
+                   eBuilding::sAttackable(bt);
+        });
+        for(const auto b : bds) {
+            const auto t = b->centerTile();
+            if(!t) continue;
+            const int d = std::abs(t->x() - from->x()) +
+                          std::abs(t->y() - from->y());
+            if(d < best) {
+                best = d;
+                target = t;
+            }
+        }
+    }
+    if(!target) return;
+    eSoldierBanner::sPlace(bs, target->x(), target->y(), board, 3, 0);
+}
+
+void eGodAttackAction::fleeArmy() {
+    auto& board = this->board();
+    const auto c = character();
+    const auto ocid = c->onCityId();
+    const auto rect = board.boardCityTileBRect(ocid);
+    for(const auto& b : mArmy) {
+        const std::vector<eSoldier*> solds = b->soldiers();
+        for(const auto s : solds) {
+            if(!s || s->dead()) continue;
+            const auto st = s->tile();
+            s->setBanner(nullptr);
+            if(!st) {
+                s->kill();
+                continue;
+            }
+            // Nearest walkable tile on the edge of the city
+            eTile* exit = nullptr;
+            int best = __INT_MAX__;
+            // (the city rectangle is in board (dtile) coordinates)
+            const auto check = [&](const int x, const int y) {
+                const auto t = board.dtile(x, y);
+                if(!t || !t->walkable()) return;
+                const int d = std::abs(t->x() - st->x()) +
+                              std::abs(t->y() - st->y());
+                if(d < best) {
+                    best = d;
+                    exit = t;
+                }
+            };
+            for(int x = rect.x; x < rect.x + rect.w; x++) {
+                check(x, rect.y);
+                check(x, rect.y + rect.h - 1);
+            }
+            for(int y = rect.y; y < rect.y + rect.h; y++) {
+                check(rect.x, y);
+                check(rect.x + rect.w - 1, y);
+            }
+            const auto a = e::make_shared<eMoveToAction>(s);
+            const auto kill = std::make_shared<eKillCharacterFinishFail>(
+                                  board, s);
+            a->setFinishAction(kill);
+            a->setFailAction(kill);
+            const stdptr<eCharacter> sptr(s);
+            a->setFindFailAction([sptr]() {
+                if(sptr) sptr->kill();
+            });
+            s->setAction(a);
+            s->setActionType(eCharacterActionType::walk);
+            if(exit) a->start(exit);
+            else s->kill();
+        }
+    }
+    mArmy.clear();
+}
+
 void eGodAttackAction::read(eReadStream& src) {
     eGodAction::read(src);
     src >> mStage;
@@ -226,6 +415,20 @@ void eGodAttackAction::read(eReadStream& src) {
     src.readBuilding(&board, [this](eBuilding* const b) {
         mSanctuary = static_cast<eSanctuary*>(b);
     });
+    if(src.formatVersion() >= eFileFormat::aresArmy) {
+        src >> mArmySpawned;
+        int nb;
+        src >> nb;
+        for(int i = 0; i < nb; i++) {
+            eBannerType type;
+            src >> type;
+            const auto b = e::make_shared<eSoldierBanner>(type, board);
+            b->read(src);
+            mArmy.push_back(b);
+        }
+    } else {
+        mArmySpawned = true;
+    }
 }
 
 void eGodAttackAction::write(eWriteStream& dst) const {
@@ -238,6 +441,12 @@ void eGodAttackAction::write(eWriteStream& dst) const {
     dst << mLookForGod;
     dst << mLookForSpecial;
     dst.writeBuilding(mSanctuary);
+    dst << mArmySpawned;
+    dst << static_cast<int>(mArmy.size());
+    for(const auto& b : mArmy) {
+        dst << b->type();
+        b->write(dst);
+    }
 }
 
 void eGodAttackAction::setSanctuary(const stdptr<eSanctuary>& s) {
