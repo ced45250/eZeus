@@ -3266,6 +3266,7 @@ void eGameBoard::progressTidalWaves() {
                 if(c) c->incTerrainState();
 
                 t->scheduleNeighboursTerrainUpdate(2);
+                if(!from || !to) continue;
                 path.push_back({(double)from->x(), (double)from->y(), 0.});
                 path.push_back({(double)to->x(), (double)to->y(), 0.});
                 const auto m = e::make_shared<eWaveMissile>(*this, path);
@@ -3342,8 +3343,27 @@ void eGameBoard::sinkLand(const eCityId cid, const int amount) {
     mTidalWaves.push_back(w);
 }
 
-void eGameBoard::addTidalWave(eTile* const startTile,
+void eGameBoard::addTidalWave(eTile* startTile,
                               const bool permanent) {
+    if(!startTile) return;
+    // The disaster point may be outside the tidal wave zone (often at
+    // sea): start from the nearest tidal wave zone tile instead
+    if(!startTile->tidalWaveZone()) {
+        eTile* nearest = nullptr;
+        const int sx = startTile->x();
+        const int sy = startTile->y();
+        for(int k = 1; k < 40 && !nearest; k++) {
+            eIterateSquare::iterateSquare(k, [&](const int dx, const int dy) {
+                const auto t = tile(sx + dx, sy + dy);
+                if(t && t->tidalWaveZone()) {
+                    nearest = t;
+                    return true;
+                }
+                return false;
+            });
+        }
+        if(nearest) startTile = nearest;
+    }
     std::vector<eTile*> shore;
     {
         std::vector<eTile*> used;
@@ -3381,6 +3401,13 @@ void eGameBoard::addTidalWave(eTile* const startTile,
         };
         for(const auto s : shore) {
             addNeighs(s, 0);
+        }
+        // Zone without a shore: the wave starts from the start tile
+        if(w->fTiles.empty() && startTile->tidalWaveZone() &&
+           !startTile->hasWater()) {
+            used.push_back(startTile);
+            w->fTiles.emplace_back().push_back(
+                {startTile, startTile->terrain(), eOrientation::topRight});
         }
         for(int i = 0; i < (int)w->fTiles.size(); i++) {
             for(const auto t : w->fTiles[i]) {
@@ -3538,6 +3565,7 @@ void eGameBoard::progressLandSlide() {
                 if(c) c->incTerrainState();
 
                 t->scheduleNeighboursTerrainUpdate(2);
+                if(!from || !to) continue;
                 path.push_back({(double)from->x(), (double)from->y(), 0.});
                 path.push_back({(double)to->x(), (double)to->y(), 0.});
                 const auto m = e::make_shared<eDustMissile>(*this, path);
@@ -3575,6 +3603,7 @@ void eGameBoard::progressLavaFlow() {
                 if(c) c->incTerrainState();
 
                 t->scheduleNeighboursTerrainUpdate(2);
+                if(!from || !to) continue;
                 path.push_back({(double)from->x(), (double)from->y(), 0.});
                 path.push_back({(double)to->x(), (double)to->y(), 0.});
                 const auto m = e::make_shared<eLavaMissile>(*this, path);

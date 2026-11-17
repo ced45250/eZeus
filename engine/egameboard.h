@@ -614,7 +614,7 @@ public:
     void earthquake(eTile* const startTile, const int size);
     bool duringEarthquake() const;
 
-    void addTidalWave(eTile* const startTile,
+    void addTidalWave(eTile* startTile,
                       const bool permanent);
     bool duringTidalWave() const;
 
