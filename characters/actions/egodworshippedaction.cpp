@@ -17,7 +17,8 @@ void eGodWorshippedAction::increment(const int by) {
     if(!r) {
         const int attackPeriod = eNumbers::sGodWorshippedSoldierAttackPeriod;
         const int attackRange = eNumbers::sGodWorshippedSoldierAttackRange;
-        const bool r = lookForSoldierAttack(by, mLookForSoldierAttack,
+        const bool r = sFightsTroops(type()) &&
+                       lookForSoldierAttack(by, mLookForSoldierAttack,
                                             attackPeriod, attackRange);
         if(!r) {
             if(mStage != eGodWorshippedStage::defend &&
@@ -36,7 +37,7 @@ void eGodWorshippedAction::increment(const int by) {
                 mLookForCityDefense += by;
                 if(mLookForCityDefense > lookForCityDefenseCheck) {
                     mLookForCityDefense -= lookForCityDefenseCheck;
-                    defendCity();
+                    if(sDefendsCity(type())) defendCity();
                 }
             }
         }

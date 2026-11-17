@@ -506,6 +506,12 @@ public:
                                    const int freq, const int range,
                                    const double bless);
 
+    // As in the original: only Athena and Ares fight enemy troops,
+    // and only Athena goes to defend the city during an invasion.
+    // The other gods help through prayers (Zeus, Hephaestus' Talos...)
+    static bool sFightsTroops(const eGodType type);
+    static bool sDefendsCity(const eGodType type);
+
     bool lookForSoldierAttack(const int dtime, int& time,
                               const int freq, const int range);
 

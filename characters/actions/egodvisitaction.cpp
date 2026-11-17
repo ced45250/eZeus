@@ -13,7 +13,10 @@ void eGodVisitAction::increment(const int by) {
     const int blessRange = eNumbers::sGodVisitBlessRange;
 
     bool r = lookForTargetedBlessCurse(by, mLookForBless, blessPeriod, blessRange, 1);
-    if(!r) lookForSoldierAttack(by, mLookForSoldierAttack, attackPeriod, attackRange);
+    if(!r && sFightsTroops(type())) {
+        lookForSoldierAttack(by, mLookForSoldierAttack,
+                             attackPeriod, attackRange);
+    }
 
     eGodAction::increment(by);
 }

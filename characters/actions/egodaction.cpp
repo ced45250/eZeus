@@ -58,6 +58,14 @@ bool eGodAction::lookForTargetedBlessCurse(
                               at, act, chart, s);
 }
 
+bool eGodAction::sFightsTroops(const eGodType type) {
+    return type == eGodType::athena || type == eGodType::ares;
+}
+
+bool eGodAction::sDefendsCity(const eGodType type) {
+    return type == eGodType::athena;
+}
+
 bool eGodAction::lookForSoldierAttack(
         const int dtime, int& time,
         const int freq, const int range) {
