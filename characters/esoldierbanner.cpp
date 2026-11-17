@@ -259,14 +259,18 @@ eTile* eSoldierBanner::place(eSoldier* const s) const {
 }
 
 void eSoldierBanner::killAll() {
-    for(const auto s : mSoldiers) {
+    // Copy: a dying soldier removes itself from mSoldiers
+    const auto solds = mSoldiers;
+    for(const auto s : solds) {
         s->kill();
     }
     mSoldiers.clear();
 }
 
 void eSoldierBanner::killAllWithCorpse() {
-    for(const auto s : mSoldiers) {
+    // Copy: a dying soldier removes itself from mSoldiers
+    const auto solds = mSoldiers;
+    for(const auto s : solds) {
         s->killWithCorpse();
     }
     mSoldiers.clear();
