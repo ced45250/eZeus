@@ -2,6 +2,7 @@
 #define EAVAILABLEBUILDINGS_H
 
 #include <map>
+#include <set>
 
 #include "characters/gods/egod.h"
 
@@ -112,6 +113,10 @@ public:
     eAvailable fTheseusHall = eAvailable::notAvailable;
 
     std::map<eBuildingType, ePyramidAvailable> fPyramids;
+
+    // Buildings forbidden by the scenario that have no dedicated field
+    // (tax office, palace, watch post, hospital...)
+    std::set<eBuildingType> fDisallowed;
 
     int fPopulationMonument = 0;
     int fVictoryMonument = 0;

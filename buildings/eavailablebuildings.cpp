@@ -4,6 +4,7 @@
 #include "fileIO/ewritestream.h"
 
 #include "buildings/ebuilding.h"
+#include "fileIO/efileformat.h"
 
 #include <algorithm>
 
@@ -100,6 +101,17 @@ void eAvailableBuildings::read(eReadStream& src) {
             a.fLevels.push_back(l);
         }
     }
+
+    fDisallowed.clear();
+    if(src.formatVersion() >= eFileFormat::disallowedBuildings) {
+        int nd;
+        src >> nd;
+        for(int i = 0; i < nd; i++) {
+            eBuildingType type;
+            src >> type;
+            fDisallowed.insert(type);
+        }
+    }
 }
 
 void eAvailableBuildings::write(eWriteStream& dst) const {
@@ -189,6 +201,11 @@ void eAvailableBuildings::write(eWriteStream& dst) const {
         for(const bool d : a.fLevels) {
             dst << d;
         }
+    }
+
+    dst << (int)fDisallowed.size();
+    for(const auto type : fDisallowed) {
+        dst << type;
     }
 }
 
@@ -377,7 +394,7 @@ bool eAvailableBuildings::available(
         return mGodMonuments.at(t);
     } break;
     default:
-        return true;
+        return fDisallowed.count(type) == 0;
     }
     return true;
 }
@@ -483,6 +500,7 @@ void eAvailableBuildings::destroyed(
 
 void eAvailableBuildings::allow(
         const eBuildingType type, const int id) {
+    fDisallowed.erase(type);
     switch(type) {
     case eBuildingType::commemorative: {
         int* c = nullptr;
@@ -542,9 +560,13 @@ void eAvailableBuildings::disallow(
         *aa = false;
         return;
     }
+    if(type == eBuildingType::none) return;
+    fDisallowed.insert(type);
 }
 
 void eAvailableBuildings::startEpisode(const eAvailableBuildings& o) {
+    fDisallowed = o.fDisallowed;
+
     for(auto& op : o.fPyramids) {
         auto& oa = op.second;
         auto& a = fPyramids[op.first];
