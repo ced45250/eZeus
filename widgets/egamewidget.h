@@ -284,6 +284,11 @@ private:
     // Shows the game speed for a short time after a speed shortcut
     void showSpeedInfo();
 
+    // Cheat codes
+    void startCheatInput();
+    void stopCheatInput();
+    void updateCheatLabel();
+    void cheatKeyPress(const eKeyPressEvent& e);
 
     stdsptr<eTexture> getBasementTexture(
             const int tx, const int ty, eBuilding* const d,
@@ -367,6 +372,9 @@ private:
     eFramedLabel* mSpeedInfoLabel = nullptr;
     int mSpeedInfoEndFrame = 0;
 
+    bool mCheatInput = false;
+    std::string mCheatCode;
+    eFramedLabel* mCheatLabel = nullptr;
 
     eTopBarWidget* mTopBar = nullptr;
     eInfoWidget* mInfoWidget = nullptr;

@@ -780,6 +780,8 @@ add_executable(eZeus
     engine/egameboard.h
     engine/egameboardread.cpp
     engine/egameboardwrite.cpp
+    engine/egamecheats.cpp
+    engine/egamecheats.h
     engine/egameevents.cpp
     engine/egameevents.h
     engine/egifthelpers.cpp

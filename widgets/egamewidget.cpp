@@ -66,6 +66,7 @@
 #include "edistrictconditionswidget.h"
 #include "buildings/ehippodromepiece.h"
 #include "estringhelpers.h"
+#include "engine/egamecheats.h"
 #include "ekeybindings.h"
 #include "widgets/ekeybindingsmenu.h"
 
@@ -1798,18 +1799,90 @@ void eGameWidget::showSpeedInfo() {
     const int p = mSpeedInfoLabel->padding();
     int y = mTopBar->height() + 2*p;
     if(mPausedLabel) y += mPausedLabel->height() + p;
+    if(mCheatLabel) y += mCheatLabel->height() + p;
     mSpeedInfoLabel->setY(y);
     // ~2 seconds (the game draws 20 frames per second)
     mSpeedInfoEndFrame = mFrame + 40;
 }
 
+void eGameWidget::startCheatInput() {
+    mCheatInput = true;
+    mCheatCode.clear();
+    updateCheatLabel();
+}
 
+void eGameWidget::stopCheatInput() {
+    mCheatInput = false;
+    mCheatCode.clear();
+    if(mCheatLabel) {
+        mCheatLabel->deleteLater();
+        mCheatLabel = nullptr;
+    }
+}
 
+void eGameWidget::updateCheatLabel() {
+    if(mCheatLabel) {
+        mCheatLabel->deleteLater();
+        mCheatLabel = nullptr;
+    }
+    const std::string space = "     ";
+    const auto str = "Code de triche : " + mCheatCode + "_";
+    mCheatLabel = new eFramedLabel(space + str + space, window());
+    mCheatLabel->setType(eFrameType::message);
+    mCheatLabel->setSmallFontSize();
+    mCheatLabel->setHugePadding();
+    mCheatLabel->fitContent();
+    addWidget(mCheatLabel);
+    const int vw = width() - mGm->width();
+    const int w = mCheatLabel->width();
+    mCheatLabel->setX((vw - w)/2);
+    const int p = mCheatLabel->padding();
+    int y = mTopBar->height() + 2*p;
+    if(mPausedLabel) y += mPausedLabel->height() + p;
+    mCheatLabel->setY(y);
+}
 
+void eGameWidget::cheatKeyPress(const eKeyPressEvent& e) {
+    const auto k = e.key();
+    if(k == SDL_Scancode::SDL_SCANCODE_ESCAPE) {
+        stopCheatInput();
+    } else if(k == SDL_Scancode::SDL_SCANCODE_RETURN ||
+              k == SDL_Scancode::SDL_SCANCODE_KP_ENTER) {
+        const auto code = mCheatCode;
+        stopCheatInput();
+        if(code.empty()) return;
+        mBoard->waitUntilFinished();
+        std::string msg;
+        const auto hover = mBoard->tile(mHoverTX, mHoverTY);
+        eGameCheats::apply(*mBoard, code, msg, hover);
+        showTip(mBoard->personPlayer(), msg);
+    } else if(k == SDL_Scancode::SDL_SCANCODE_BACKSPACE) {
+        if(!mCheatCode.empty()) mCheatCode.pop_back();
+        updateCheatLabel();
+    } else {
+        // Key converted with the keyboard layout (AZERTY, QWERTY...)
+        const SDL_Keycode kc = SDL_GetKeyFromScancode(k);
+        const bool letter = kc >= SDLK_a && kc <= SDLK_z;
+        const bool digit = kc >= SDLK_0 && kc <= SDLK_9;
+        if((letter || digit || kc == SDLK_SPACE) && mCheatCode.size() < 32) {
+            mCheatCode += static_cast<char>(kc);
+            updateCheatLabel();
+        }
+    }
+}
 
 bool eGameWidget::keyPressEvent(const eKeyPressEvent& e) {
     if(mLocked) return true;
+    if(mCheatInput) {
+        cheatKeyPress(e);
+        return true;
+    }
     const auto k = e.key();
+    if(e.ctrlPressed() && !mBoard->editorMode() &&
+       SDL_GetKeyFromScancode(k) == SDLK_c) {
+        startCheatInput();
+        return true;
+    }
     if(eKeyBindings::matches(eKeyAction::speedUp, k)) {
         mSpeedId = std::clamp(mSpeedId + 1, 0, sMaxSpeedId);
         mSpeed = sSpeeds[mSpeedId];

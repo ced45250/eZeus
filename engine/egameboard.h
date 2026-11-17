@@ -579,6 +579,11 @@ public:
     void loadResources();
 
     bool checkGoalsFulfilled() const;
+    // Cheat: the goals count as fulfilled at the next check
+    void cheatCompleteEpisode() {
+        mGoalsFulfilled = true;
+        mGoalsCheckTime = 5050; // = goalsCheckWait in incTime()
+    }
 
     void musterAllSoldiers(const eCityId cid);
     void sendAllSoldiersHome(const eCityId cid);

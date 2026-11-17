@@ -431,7 +431,7 @@ void eGameWidget::paintEvent(ePainter& p) {
         const Uint32 elapsed = std::min<Uint32>(now - mLastKeyScrollTicks, 100);
         mLastKeyScrollTicks = now;
         const bool ctrlHeld = SDL_GetModState() & KMOD_CTRL;
-        if(!mLocked && !mMsgBox && !ctrlHeld &&
+        if(!mLocked && !mCheatInput && !mMsgBox && !ctrlHeld &&
            !eWidget::sHasKeyboardGrabber() && !eEventBackground::sAnyOpen()) {
             int kx = 0;
             int ky = 0;
