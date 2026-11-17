@@ -195,6 +195,10 @@ struct eNumbers {
 
     static int sGodWorshippedSoldierAttackPeriod;
     static int sGodWorshippedSoldierAttackRange;
+
+    // Mods
+    static double sKrakenAttackSpeed; // Kraken attacking the city
+    static double sKrakenDefenceSpeed; // Kraken guarding the city
     static int sGodWorshippedBlessPeriod;
     static int sGodWorshippedBlessRange;
 

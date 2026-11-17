@@ -32,7 +32,18 @@ public:
     void goToTarget();
     void goBack();
     void monsterPatrol();
+
+    // A monster belonging to a player's city guards it
+    // (Cerberus of Hades, Kraken of Poseidon, Dragon of Ares)
+    bool guardian() const;
 private:
+    bool guardianDecide();
+    // Dragon of Ares: walks with Ares and fights the troops near them
+    bool dragonDecide();
+    eCharacter* nearestEnemySoldier(const int maxDist) const;
+    eCharacter* nearestEnemyBoat(const int maxDist, int& dist) const;
+    void huntBoats(const int by);
+    bool waterMonster() const;
     void destroyBuilding(eBuilding* const b);
     eTile* closestEmptySpace(const int rdx, const int rdy) const;
     void randomPlaceOnBoard();
@@ -55,6 +66,33 @@ private:
     eMonsterAttackStage mStage{eMonsterAttackStage::none};
     const eMonsterType mType;
     int mLookForAttack = 0;
+    int mLookForBoat = 0;
+    int mBoatRetarget = 0;
+    int mSinkAnim = 0;
+};
+
+// Monster attack sound, played when the attack is on screen
+class eMA_playAttackSound : public eCharActFunc {
+public:
+    eMA_playAttackSound(eGameBoard& board) :
+        eCharActFunc(board, eCharActFuncType::MA_playAttackSound) {}
+    eMA_playAttackSound(eGameBoard& board, eCharacter* const c) :
+        eCharActFunc(board, eCharActFuncType::MA_playAttackSound),
+        mCptr(c) {}
+
+    void call() override;
+
+    void read(eReadStream& src) override {
+        src.readCharacter(&board(), [this](eCharacter* const c) {
+            mCptr = c;
+        });
+    }
+
+    void write(eWriteStream& dst) const override {
+        dst.writeCharacter(mCptr);
+    }
+private:
+    stdptr<eCharacter> mCptr;
 };
 
 class eGoToTargetTryAgain : public eFindFailFunc {

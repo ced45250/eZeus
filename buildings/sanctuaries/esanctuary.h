@@ -65,10 +65,19 @@ public:
     void setSpawnWait(const int w);
 
     bool sacrificing() const;
+
+    // Hades (Cerberus) and Poseidon (Kraken) guard the city
+    // once their sanctuary is finished
+    static bool sHasGuardian(const eGodType type);
 private:
+    void spawnGuardian();
+
     stdptr<eGod> mGod;
     bool mGodAbroad = false;
     int mSpawnWait = 0;
+
+    stdptr<eCharacter> mGuardian;
+    int mGuardianWait = 0;
 
     bool mAskedForHelp = false;
     int mCheckHelpNeeded = 0;

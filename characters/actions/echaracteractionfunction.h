@@ -86,7 +86,9 @@ enum class eCharacterActionFunctionType {
 
     GWA_huntMonsterFinish,
 
-    enemyBoatFinish
+    enemyBoatFinish,
+
+    MA_playAttackSound
 };
 
 using eCharActFuncType = eCharacterActionFunctionType;

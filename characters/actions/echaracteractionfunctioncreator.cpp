@@ -177,6 +177,9 @@ stdsptr<eCharActFunc> eCharActFunc::sCreate(
 
     case eCharActFuncType::enemyBoatFinish:
         return std::make_shared<eEnemyBoatFinish>(board);
+
+    case eCharActFuncType::MA_playAttackSound:
+        return std::make_shared<eMA_playAttackSound>(board);
     }
     return nullptr;
 }

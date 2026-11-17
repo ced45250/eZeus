@@ -4,6 +4,9 @@
 #include "characters/gods/egod.h"
 #include "characters/actions/egodworshippedaction.h"
 #include "etilehelper.h"
+#include "characters/monsters/emonster.h"
+#include "characters/actions/emonsteraction.h"
+#include "fileIO/efileformat.h"
 #include "engine/eevent.h"
 #include "engine/eeventdata.h"
 #include "gameEvents/eplayerconquesteventbase.h"
@@ -325,6 +328,27 @@ void eSanctuary::timeChanged(const int by) {
         }
     }
 
+    if(finished() && godType() == eGodType::ares) {
+        // Ares always walks around with his dragon: it comes and goes
+        // with him
+        const bool aresHere = mGod && !mGod->dead() &&
+                              mGod->tile() && mGod->visible();
+        if(aresHere && (!mGuardian || mGuardian->dead())) {
+            spawnGuardian();
+        } else if(!mGod && mGuardian && !mGuardian->dead()) {
+            mGuardian->kill();
+            mGuardian = nullptr;
+        }
+    } else if(finished() && sHasGuardian(godType()) &&
+       (!mGuardian || mGuardian->dead())) {
+        mGuardianWait -= by;
+        if(mGuardianWait <= 0) {
+            // Next spawn (if this one dies) only after a while
+            mGuardianWait = 40000;
+            spawnGuardian();
+        }
+    }
+
     if(mAskedForHelp) {
         const int checkInterval = 1000;
         mCheckHelpNeeded += by;
@@ -364,6 +388,62 @@ void eSanctuary::nextMonth() {
     }
 }
 
+
+
+bool eSanctuary::sHasGuardian(const eGodType type) {
+    return type == eGodType::hades ||
+           type == eGodType::poseidon ||
+           type == eGodType::ares;
+}
+
+void eSanctuary::spawnGuardian() {
+    auto& board = getBoard();
+    const auto ct = centerTile();
+    if(!ct) return;
+    const bool kraken = godType() == eGodType::poseidon;
+    eTile* tile = nullptr;
+    if(kraken) {
+        // Nearest deep water around the sanctuary
+        for(int r = 1; r < 60 && !tile; r++) {
+            for(int dx = -r; dx <= r && !tile; dx++) {
+                for(int dy = -r; dy <= r && !tile; dy++) {
+                    if(std::max(std::abs(dx), std::abs(dy)) != r) continue;
+                    const auto t = board.tile(ct->x() + dx, ct->y() + dy);
+                    if(t && t->hasDeepWater()) tile = t;
+                }
+            }
+        }
+    } else if(godType() == eGodType::ares) {
+        // Next to Ares
+        const auto gt = mGod ? mGod->tile() : nullptr;
+        if(!gt) return;
+        for(int r = 1; r <= 3 && !tile; r++) {
+            for(int dx = -r; dx <= r && !tile; dx++) {
+                for(int dy = -r; dy <= r && !tile; dy++) {
+                    const auto t = board.tile(gt->x() + dx, gt->y() + dy);
+                    if(t && t->walkable()) tile = t;
+                }
+            }
+        }
+    } else {
+        tile = eTileHelper::closestRoad(ct->x(), ct->y(), board);
+    }
+    if(!tile) return;
+    eMonsterType mt;
+    switch(godType()) {
+    case eGodType::poseidon: mt = eMonsterType::kraken; break;
+    case eGodType::ares: mt = eMonsterType::dragon; break;
+    default: mt = eMonsterType::cerberus; break;
+    }
+    const auto m = eMonster::sCreateMonster(mt, board);
+    // Belonging to the city makes it a guardian (see eMonsterAction)
+    m->setBothCityIds(cityId());
+    m->changeTile(tile);
+    const auto a = e::make_shared<eMonsterAction>(m.get());
+    m->setAction(a);
+    mGuardian = m.get();
+}
+
 void eSanctuary::read(eReadStream& src) {
     eMonument::read(src);
 
@@ -374,6 +454,12 @@ void eSanctuary::read(eReadStream& src) {
     });
     src >> mSpawnWait;
     src >> mGodAbroad;
+    if(src.formatVersion() >= eFileFormat::sanctuaryGuardian) {
+        src.readCharacter(&board, [this](eCharacter* const c) {
+            mGuardian = c;
+        });
+        src >> mGuardianWait;
+    }
 
     src >> mAskedForHelp;
     src >> mCheckHelpNeeded;
@@ -400,6 +486,8 @@ void eSanctuary::write(eWriteStream& dst) const {
     dst.writeCharacter(mGod);
     dst << mSpawnWait;
     dst << mGodAbroad;
+    dst.writeCharacter(mGuardian);
+    dst << mGuardianWait;
 
     dst << mAskedForHelp;
     dst << mCheckHelpNeeded;

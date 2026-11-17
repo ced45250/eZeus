@@ -65,6 +65,8 @@ void eHephaestusHelpAction::provide() {
                     finishAttackA);
 
     const auto talos = e::make_shared<eTalos>(board);
+    // Without a city, Talos found no invasion to defend and left at once
+    talos->setBothCityIds(cid);
     const auto tile = c->tile();
     talos->changeTile(tile);
     const auto da = e::make_shared<eDefendCityAction>(talos.get());

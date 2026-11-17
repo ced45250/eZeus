@@ -195,6 +195,8 @@ int eNumbers::sGodVisitMoveAroundTime;
 
 int eNumbers::sGodWorshippedSoldierAttackPeriod;
 int eNumbers::sGodWorshippedSoldierAttackRange;
+double eNumbers::sKrakenAttackSpeed;
+double eNumbers::sKrakenDefenceSpeed;
 int eNumbers::sGodWorshippedBlessPeriod;
 int eNumbers::sGodWorshippedBlessRange;
 
@@ -513,6 +515,9 @@ void eNumbers::sLoad(const std::string& path) {
 
     loadI("god_worshipped_soldier_attack_period_i", sGodWorshippedSoldierAttackPeriod, 2500, 1, 1000000);
     loadI("god_worshipped_soldier_attack_range_i", sGodWorshippedSoldierAttackRange, 10, 1, 20);
+
+    loadD("kraken_attack_speed_d", sKrakenAttackSpeed, 1, 0.1, 10);
+    loadD("kraken_defence_speed_d", sKrakenDefenceSpeed, 1, 0.1, 10);
     loadI("god_worshipped_bless_period_i", sGodWorshippedBlessPeriod, 6000, 1, 1000000);
     loadI("god_worshipped_bless_range_i", sGodWorshippedBlessRange, 10, 1, 20);
 

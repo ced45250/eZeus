@@ -7,6 +7,7 @@ namespace eFileFormat {
         settlerEmigrant,
         cartTarget,
         disallowedBuildings,
+        sanctuaryGuardian,
 
         nextVersion
     };
